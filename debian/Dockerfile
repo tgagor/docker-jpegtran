@@ -4,10 +4,10 @@ MAINTAINER tgagor, https://github.com/tgagor
 ENV DEBIAN_FRONTEND noninteractive
 ENV TERM xterm
 
-# Install optipng
+# Install jpegtran
 RUN apt-get update && \
     apt-get install -y --no-install-recommends libjpeg-turbo-progs && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-CMD ["/usr/bin/jpegtran"]
+ENTRYPOINT ["/usr/bin/jpegtran"]

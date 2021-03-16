@@ -21,63 +21,47 @@ jobs:
       - name: Build, tag and push the Docker image
         run: |
           echo ${{ secrets.CR_PAT }} | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
+
           docker build --tag ghcr.io/tgagor/jpegtran:alpine --cache-from ghcr.io/tgagor/jpegtran:alpine alpine
           docker build --tag ghcr.io/tgagor/jpegtran:debian --cache-from ghcr.io/tgagor/jpegtran:debian debian
+
           docker run -i --rm ghcr.io/tgagor/jpegtran:alpine -version
           docker run -i --rm ghcr.io/tgagor/jpegtran:debian -version
+
           docker tag ghcr.io/tgagor/jpegtran:alpine ghcr.io/tgagor/jpegtran:${GITHUB_REF##*/}
-          docker tag ghcr.io/tgagor/jpegtran:alpine ghcr.io/tgagor/jpegtran:alpine-${{ github.sha }}
-          docker tag ghcr.io/tgagor/jpegtran:debian ghcr.io/tgagor/jpegtran:debian-${{ github.sha }}
+
           docker push ghcr.io/tgagor/jpegtran:alpine
-          docker push ghcr.io/tgagor/jpegtran:alpine-${{ github.sha }}
           docker push ghcr.io/tgagor/jpegtran:debian
-          docker push ghcr.io/tgagor/jpegtran:debian-${{ github.sha }}
           docker push ghcr.io/tgagor/jpegtran:${GITHUB_REF##*/}
 
-  # security-scan:
-  #   runs-on: ubuntu-20.04
-  #   needs:
-  #     - build
-  #   steps:
-  #     - name: Authenticate to ghcr.io
-  #       run: |
-  #         echo ${{ secrets.CR_PAT }} | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
+  security-scan:
+    runs-on: ubuntu-20.04
+    needs:
+      - build
+    steps:
+      - name: Authenticate to ghcr.io
+        run: |
+          echo ${{ secrets.CR_PAT }} | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
 
       - name: Run Trivy vulnerability scanner on Alpine image
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ghcr.io/tgagor/jpegtran:alpine-${{ github.sha }}
+          image-ref: ghcr.io/tgagor/jpegtran:alpine
           format: template
           template: '@/contrib/sarif.tpl'
-          # don't fail
           exit-code: 0
-          output: trivy-results-alpine.sarif
-
-      # - name: Run Trivy vulnerability scanner on Debian image
-      #   uses: aquasecurity/trivy-action@master
-      #   with:
-      #     image-ref: ghcr.io/tgagor/jpegtran:debian-${{ github.sha }}
-      #     format: template
-      #     template: '@/contrib/sarif.tpl'
-      #     # don't fail
-      #     exit-code: 0
-      #     output: trivy-results-debian.sarif
+          output: trivy-results.sarif
 
       - name: Upload Trivy Alpine variant scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v1
         with:
-          sarif_file: trivy-results-alpine.sarif
-
-      # - name: Upload Trivy Debian variant scan results to GitHub Security tab
-      #   uses: github/codeql-action/upload-sarif@v1
-      #   with:
-      #     sarif_file: trivy-results-debian.sarif
+          sarif_file: trivy-results.sarif
 
   release:
     runs-on: ubuntu-20.04
     needs:
       - build
-      # - security-scan
+      - security-scan
     steps:
       - uses: actions/checkout@v2
       - name: Bump version and push tag

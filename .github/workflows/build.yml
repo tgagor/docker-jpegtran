@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
-      - name: Build the Docker image
+      - name: Build, tag and push the Docker image
         run: |
           echo ${{ secrets.CR_PAT }} | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
           docker build --tag ghcr.io/tgagor/jpegtran:alpine --cache-from ghcr.io/tgagor/jpegtran:alpine alpine
@@ -39,6 +39,10 @@ jobs:
     needs:
       - build
     steps:
+      - name: Authenticate to ghcr.io
+        run: |
+          echo ${{ secrets.CR_PAT }} | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
+
       - name: Run Trivy vulnerability scanner on Alpine image
         uses: aquasecurity/trivy-action@master
         with:

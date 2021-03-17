@@ -34,15 +34,15 @@ jobs:
           docker push ghcr.io/tgagor/jpegtran:debian
           docker push ghcr.io/tgagor/jpegtran:${GITHUB_REF##*/}
 
-# FIXME: this require further work as I'm not able to authenticate docker for trivy
-  # security-scan:
-  #   runs-on: ubuntu-20.04
-  #   needs:
-  #     - build
-  #   steps:
-  #     - name: Authenticate to ghcr.io
-  #       run: |
-  #         echo ${{ secrets.CR_PAT }} | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
+  security-scan:
+    runs-on: ubuntu-20.04
+    needs:
+      - build
+    steps:
+      - name: Authenticate to ghcr.io
+        run: |
+          echo ${{ secrets.CR_PAT }} | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
+          docker pull ghcr.io/tgagor/jpegtran:alpine
 
       - name: Run Trivy vulnerability scanner on Alpine image
         uses: aquasecurity/trivy-action@master
